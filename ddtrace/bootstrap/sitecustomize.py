@@ -4,6 +4,7 @@ Add all monkey-patching that needs to run by default here
 """
 
 import os
+import sys
 import logging
 
 from ddtrace.util import asbool
@@ -16,6 +17,18 @@ else:
     logging.basicConfig()
 
 log = logging.getLogger(__name__)
+
+# Inspect the system paths (excluding the ddtrace one) for instances of
+# sitecustomize.py. Load the first one found.
+for path in sys.path:
+    if 'ddtrace' not in path:
+        extra_customization = os.path.join(path, "sitecustomize.py")
+        log.debug('Checking for additional sitecustomize.py at %s' % extra_customization)
+        if os.path.isfile(extra_customization):
+            log.debug('Importing %s' % path)
+            execfile(extra_customization)
+            break
+
 
 EXTRA_PATCHED_MODULES = {
     "bottle": True,
